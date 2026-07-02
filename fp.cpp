@@ -9,7 +9,7 @@ using namespace std;
 
 void registerUser();
 void loginUser();
-
+void simpanDataKeFile(); 
 
 // ==========================================================
 // 1. STRUKTUR DATA DASAR & GLOBAL VARIABEL
@@ -47,11 +47,26 @@ void menuUtama() {
     int pilih;
 
     while (!sudahLogin) {
-        cout << "\n===== MENU UTAMA =====\n";
-        cout << "1. Login\n";
-        cout << "2. Register\n";
-        cout << "3. Keluar\n";
-        cout << "Pilihan : ";
+        cout << R"(
+
+   _____ ______ _____  __      _______  _____ ______ 
+  / ____|  ____|  __ \ \ \    / /_   _|/ ____|  ____|
+ | (___ | |__  | |__) | \ \  / /  | | | |    | |__   
+  \___ \|  __| |  _  /   \ \/ /   | | | |    |  __|  
+  ____) | |____| | \ \    \  /   _| |_| |____| |____ 
+ |_____/|______|_|  \_\    \/   |_____|\_____|______|
+
+=======================================================
+               SISTEM MANAJEMEN SERVIS PC
+=======================================================
+                 MENU AUTENTIKASI
+-------------------------------------------------------
+  [1] Login
+  [2] Register
+  [3] Keluar
+-------------------------------------------------------
+)";
+cout << "Masukkan Pilihan : ";
 
         if (!(cin >> pilih)) {
             cin.clear();
@@ -223,11 +238,11 @@ void popUndo() {
     if (stackHapus.top < 0) { cout << "\nTidak ada data yang bisa dipulihkan.\n"; return; }
     if (jumlahPesanan < MAX) {
         daftarPesanan[jumlahPesanan++] = stackHapus.data[stackHapus.top--];
-        cout << "\nUndo Berhasil! Data dikembalikan.\n";
+        simpanDataKeFile();
+        cout << "\nUndo Berhasil! Data dikembalikan dan tersimpan.\n";
     }
 }
 
-// Tambahan: Fungsi untuk menampilkan isi antrian (Queue) secara realtime
 void tampilkanAntrian() {
     cout << "\n--- DAFTAR ANTRIAN AKTIF SAAT INI ---\n";
     if (antrianServis.depan == -1 || antrianServis.depan > antrianServis.belakang) {
@@ -259,7 +274,7 @@ void kerjakanDariAntrian() {
 }
 
 // ==========================================================
-// FITUR UTAMA (CRUD, SEARCHING, SORTING, FILE)
+// FITUR UTAMA (CRUD, SEARCHING, SORTING, FILE, CETAK NOTA)
 // ==========================================================
 void tambahPesanan() {
     if (jumlahPesanan >= MAX) return;
@@ -277,7 +292,8 @@ void tambahPesanan() {
     jadikanHurufBesar(p.detail_servis); 
     
     daftarPesanan[jumlahPesanan++] = p;
-    cout << "\nPesanan berhasil dicatat!\n";
+    simpanDataKeFile();
+    cout << "\nPesanan berhasil dicatat dan otomatis tersimpan!\n";
 }
 
 void tampilkanPesanan() {
@@ -305,7 +321,9 @@ void updatePesanan() {
                 jadikanHurufBesar(daftarPesanan[i].detail_servis); 
             }
             else if (pil == 3) { daftarPesanan[i].status_selesai = !daftarPesanan[i].status_selesai; }
-            cout << "Data berhasil diperbarui!\n"; return;
+            
+            simpanDataKeFile();
+            cout << "Data berhasil diperbarui dan tersimpan!\n"; return;
         }
     }
     cout << "ID tidak ditemukan.\n";
@@ -318,7 +336,8 @@ void hapusPesanan() {
             pushUndo(daftarPesanan[i]);
             for (int j = i; j < jumlahPesanan - 1; j++) daftarPesanan[j] = daftarPesanan[j + 1];
             jumlahPesanan--;
-            cout << "Pesanan berhasil dihapus!\n"; return;
+            simpanDataKeFile();
+            cout << "Pesanan berhasil dihapus dan tersimpan!\n"; return;
         }
     }
     cout << "ID tidak ditemukan.\n";
@@ -394,6 +413,60 @@ void cariPesanan() {
     } while (opsi != 0); 
 }
 
+// FUNGSI BARU: MENU 10
+void selesaikanPesananDanCetakNota() {
+    if (jumlahPesanan == 0) {
+        cout << "\nBelum ada data pesanan di sistem.\n";
+        return;
+    }
+
+    int idCari = ambilInputAngka("\nMasukkan ID Pesanan yang sudah selesai: ");
+    bool ketemu = false;
+
+    for (int i = 0; i < jumlahPesanan; i++) {
+        if (daftarPesanan[i].id_pesanan == idCari) {
+            // 1. Ubah status menjadi selesai dan simpan
+            daftarPesanan[i].status_selesai = true;
+            simpanDataKeFile();
+
+            // 2. Buat dan Cetak File Nota
+            string namaFile = "Nota_Pesanan_" + to_string(daftarPesanan[i].id_pesanan) + ".txt";
+            ofstream notaFile(namaFile);
+            
+if (notaFile.is_open()) {
+    notaFile << "------------------------------------------\n";
+    notaFile << "                 STARCOMP                 \n";
+    notaFile << "      Jl. Amikom No. 1, Yogyakarta        \n";
+    notaFile << "------------------------------------------\n";
+    notaFile << " TGL : 02-07-2026      JAM : 12:15        \n";
+    notaFile << "------------------------------------------\n";
+    notaFile << " ID PESANAN  : " << daftarPesanan[i].id_pesanan << "\n";
+    notaFile << " PELANGGAN   : " << daftarPesanan[i].nama_pelanggan << "\n";
+    notaFile << " KASUS/SERVIS: " << daftarPesanan[i].detail_servis << "\n";
+    notaFile << "------------------------------------------\n";
+    notaFile << " STATUS      : SELESAI                  \n";
+    notaFile << "------------------------------------------\n";
+    notaFile << " Terima kasih telah berkunjung.           \n";
+    notaFile << " PC siap untuk diambil.                   \n";
+    notaFile << "------------------------------------------\n";
+    notaFile.close();
+    
+    cout << "\n[BERHASIL] Status pesanan diubah menjadi SELESAI.\n";
+    cout << "Nota model struk telah dicetak ke: " << namaFile << "\n";
+} else {
+                cout << "\n[GAGAL] File nota tidak dapat dibuat.\n";
+            }
+            
+            ketemu = true;
+            break;
+        }
+    }
+
+    if (!ketemu) {
+        cout << "ID Pesanan tidak ditemukan.\n";
+    }
+}
+
 void simpanDataKeFile() {
     ofstream file(FILE_NAME);
     if (!file.is_open()) return;
@@ -429,6 +502,20 @@ bool masuk() {
     int pilihan;
     do {
         bersihkanLayar();
+        cout << R"(
+
+        .------------------------------------------------.
+        |  ____________________________________________  |
+        | |                                            | |
+        | |        SISTEM SERVIS & RAKIT PC            | |
+        | |____________________________________________| |
+        |________________________________________________|
+                     ||               ||
+                     ||_______________||
+                   __||_______________||__
+                  |_______________________|
+
+)";
         cout << "==============================================\n";
         cout << "   SISTEM MANAJEMEN RAKIT & SERVIS PC \n";
         cout << "==============================================\n";
@@ -436,10 +523,13 @@ bool masuk() {
              << "3. Update Status / Detail Servis\n4. Batalkan/Hapus Pesanan\n"
              << "5. Cari Data Pelanggan (Linear Search)\n6. Urutkan Nama Pelanggan (Bubble Sort)\n"
              << "7. Pulihkan Pesanan Terhapus (Stack Undo)\n8. Antrian Pengerjaan (Queue)\n"
-             << "9. Tampilkan Log Pengerjaan (Linked List)\n0. Keluar & Simpan Data\n"
+             << "9. Tampilkan Log Pengerjaan (Linked List)\n"
+             << "10. Selesaikan Pesanan & Cetak Nota\n" // <--- MENU 10 DITAMBAHKAN
+             << "0. Keluar & Simpan Data\n"
              << "----------------------------------------------\n";
         
-        pilihan = ambilInputAngka("Pilih menu operasional (0-9): ");
+        // Pilihan input diubah menjadi (0-10)
+        pilihan = ambilInputAngka("Pilih menu operasional (0-10): ");
 
         switch (pilihan) {
             case 1: bersihkanLayar(); tambahPesanan(); catatLog("Tambah pesanan baru."); jedaLayar(); break;
@@ -455,7 +545,6 @@ bool masuk() {
                 cout << "             MEJA KERJA TEKNISI               \n";
                 cout << "==============================================\n";
                 
-                // Menampilkan daftar antrian yang aktif saat ini secara otomatis
                 tampilkanAntrian();
                 
                 cout << "\n[MENU OPERASIONAL QUEUE]\n";
@@ -491,6 +580,15 @@ bool masuk() {
                 }
                 break;
             case 9: bersihkanLayar(); tampilkanLog(); jedaLayar(); break;
+            
+            // MENU 10 DIPANGGIL DI SINI
+            case 10: 
+                bersihkanLayar(); 
+                selesaikanPesananDanCetakNota(); 
+                catatLog("Menyelesaikan pesanan dan mencetak nota."); 
+                jedaLayar(); 
+                break;
+                
             case 0: bersihkanLayar(); simpanDataKeFile(); cout << "Data tersimpan. Keluar sistem.\n"; break;
             default: cout << "Menu tidak tersedia.\n"; jedaLayar();
         }
@@ -510,3 +608,6 @@ int main() {
     }
     return 0;
 }
+
+
+// asep
