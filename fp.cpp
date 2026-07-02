@@ -3,8 +3,13 @@
 #include <string>
 #include <cstdlib> 
 #include <cctype> 
+#include <sstream>
 
 using namespace std;
+
+void registerUser();
+void loginUser();
+
 
 // ==========================================================
 // 1. STRUKTUR DATA DASAR & GLOBAL VARIABEL
@@ -32,6 +37,127 @@ StackUndo stackHapus = {{}, -1};
 // 4. QUEUE (ANTRIAN)
 struct QueueAntrian { PesananPC data[MAX]; int depan = -1, belakang = -1; };
 QueueAntrian antrianServis;
+
+// LOGIN & REGISTER
+const string FILE_USER = "user.txt";
+bool sudahLogin = false;
+
+// Menu utama
+void menuUtama() {
+    int pilih;
+
+    while (!sudahLogin) {
+        cout << "\n===== MENU UTAMA =====\n";
+        cout << "1. Login\n";
+        cout << "2. Register\n";
+        cout << "3. Keluar\n";
+        cout << "Pilihan : ";
+
+        if (!(cin >> pilih)) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            cout << "\nInput harus berupa angka!\n";
+            continue;
+        }
+
+        switch (pilih) {
+            case 1:
+                loginUser();
+                break;
+
+            case 2:
+                registerUser();
+                break;
+
+            case 3:
+                exit(0);
+
+            default:
+                cout << "\nMenu tidak tersedia!\n";
+        }
+    }
+}
+
+
+void registerUser() {
+    string username, password;
+    bool ada = false;
+
+    cout << "\n===== REGISTER =====\n";
+    cout << "Username : ";
+    cin >> username;
+    cout << "Password : ";
+    cin >> password;
+
+    ifstream baca(FILE_USER);
+
+    string user, pass, baris;
+
+    while (getline(baca, baris)) {
+        stringstream ss(baris);
+
+        getline(ss, user, '|');
+        getline(ss, pass);
+
+        if (user == username) {
+            ada = true;
+            break;
+        }
+    }
+
+    baca.close();
+
+    if (ada) {
+        cout << "\nUsername sudah digunakan!\n";
+        return;
+    }
+
+    ofstream tulis(FILE_USER, ios::app);
+    tulis << username << "|" << password << endl;
+    tulis.close();
+
+    cout << "\nRegister berhasil!\n";
+}
+
+void loginUser() {
+    while (true) {
+        string username, password;
+
+        cout << "\n===== LOGIN =====\n";
+        cout << "Username : ";
+        cin >> username;
+        cout << "Password : ";
+        cin >> password;
+
+        ifstream baca(FILE_USER);
+
+        if (!baca.is_open()) {
+            cout << "\nDatabase user belum ada!\n";
+            return;
+        }
+
+        string user, pass, baris;
+
+        while (getline(baca, baris)) {
+            stringstream ss(baris);
+
+            getline(ss, user, '|');
+            getline(ss, pass);
+
+            if (user == username && pass == password) {
+                sudahLogin = true;
+                cout << "\nLogin berhasil.\n";
+                baca.close();
+                return;
+            }
+        }
+
+        baca.close();
+
+        cout << "\nUsername atau Password tidak sesuai!\n";
+    }
+}
+
 
 // ==========================================================
 // FUNGSI UTILITAS & VALIDASI ANTI-HURUF
@@ -297,10 +423,7 @@ void muatDataDariFile() {
     file.close();
 }
 
-// ==========================================================
-// MAIN MENU (FUNGSI UTAMA)
-// ==========================================================
-int main() {
+bool masuk() {
     muatDataDariFile();
     catatLog("Sistem dijalankan, data dimuat.");
     int pilihan;
@@ -372,5 +495,18 @@ int main() {
             default: cout << "Menu tidak tersedia.\n"; jedaLayar();
         }
     } while (pilihan != 0);
+    return 0;
+}
+
+// ==========================================================
+// MAIN MENU (FUNGSI UTAMA)
+// ==========================================================
+int main() {
+    menuUtama();
+    if (sudahLogin) {
+        masuk();
+    } else {
+        cout << "\nAnda harus login terlebih dahulu untuk mengakses sistem.\n";
+    }
     return 0;
 }
