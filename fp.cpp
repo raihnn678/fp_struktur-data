@@ -306,27 +306,88 @@ void tampilkanPesanan() {
     }
 }
 
+// ==========================================================
+// VERSI BARU: updatePesanan()
+// Perubahan:
+// - Tidak lagi memilih field mana yang mau diubah lewat menu (1/2/3)
+// - User akan ditanya SEMUA field secara berurutan: Nama -> Detail -> Status
+// - Kalau tidak mau ubah field tertentu, tinggal tekan Enter (kosongkan) untuk skip
+// ==========================================================
 void updatePesanan() {
     int idCari = ambilInputAngka("\nMasukkan ID Pesanan yang ingin diupdate: ");
+    int index = -1;
+
+    // Cari dulu posisi (index) data berdasarkan ID yang diinput
     for (int i = 0; i < jumlahPesanan; i++) {
         if (daftarPesanan[i].id_pesanan == idCari) {
-            int pil = ambilInputAngka("Ubah (1: Nama, 2: Detail, 3: Status Selesai): ");
-            cin.ignore();
-            if (pil == 1) { 
-                cout << "Nama baru: "; getline(cin, daftarPesanan[i].nama_pelanggan); 
-                jadikanHurufBesar(daftarPesanan[i].nama_pelanggan); 
-            }
-            else if (pil == 2) { 
-                cout << "Detail baru: "; getline(cin, daftarPesanan[i].detail_servis); 
-                jadikanHurufBesar(daftarPesanan[i].detail_servis); 
-            }
-            else if (pil == 3) { daftarPesanan[i].status_selesai = !daftarPesanan[i].status_selesai; }
-            
-            simpanDataKeFile();
-            cout << "Data berhasil diperbarui dan tersimpan!\n"; return;
+            index = i;
+            break;
         }
     }
-    cout << "ID tidak ditemukan.\n";
+
+    // Kalau ID tidak ketemu, langsung berhenti
+    if (index == -1) {
+        cout << "ID tidak ditemukan.\n";
+        return;
+    }
+
+    // Buang sisa newline ('\n') yang tertinggal di buffer setelah cin >> pada ambilInputAngka()
+    // Ini WAJIB ada, kalau tidak, getline() pertama akan langsung terbaca kosong
+    cin.ignore();
+
+    cout << "\n--- UPDATE DATA PESANAN (ID: " << daftarPesanan[index].id_pesanan << ") ---\n";
+    cout << "Kosongkan (langsung tekan Enter) jika field tidak ingin diubah.\n";
+
+    string inputBaru;
+
+    // ---------------------------------------------------
+    // 1. UPDATE NAMA PELANGGAN
+    // ---------------------------------------------------
+    cout << "\nNama saat ini   : " << daftarPesanan[index].nama_pelanggan << "\n";
+    cout << "Nama baru       : ";
+    getline(cin, inputBaru);
+
+    if (!inputBaru.empty()) {
+        daftarPesanan[index].nama_pelanggan = inputBaru;
+        jadikanHurufBesar(daftarPesanan[index].nama_pelanggan);
+        cout << "-> Nama berhasil diperbarui.\n";
+    } else {
+        cout << "-> Nama dilewati (tetap sama).\n";
+    }
+
+    // ---------------------------------------------------
+    // 2. UPDATE DETAIL SERVIS
+    // ---------------------------------------------------
+    cout << "\nDetail saat ini : " << daftarPesanan[index].detail_servis << "\n";
+    cout << "Detail baru     : ";
+    getline(cin, inputBaru);
+
+    if (!inputBaru.empty()) {
+        daftarPesanan[index].detail_servis = inputBaru;
+        jadikanHurufBesar(daftarPesanan[index].detail_servis);
+        cout << "-> Detail berhasil diperbarui.\n";
+    } else {
+        cout << "-> Detail dilewati (tetap sama).\n";
+    }
+
+    // ---------------------------------------------------
+    // 3. UPDATE STATUS SELESAI
+    // ---------------------------------------------------
+    cout << "\nStatus saat ini : "
+         << (daftarPesanan[index].status_selesai ? "SELESAI" : "BELUM") << "\n";
+    cout << "Ubah status jadi SELESAI? (ketik y untuk ya, Enter untuk lewati): ";
+    getline(cin, inputBaru);
+
+    if (!inputBaru.empty() && (inputBaru[0] == 'y' || inputBaru[0] == 'Y')) {
+        daftarPesanan[index].status_selesai = true;
+        cout << "-> Status berhasil diperbarui menjadi SELESAI.\n";
+    } else {
+        cout << "-> Status dilewati (tetap sama).\n";
+    }
+
+    // Simpan semua perubahan ke file sekali di akhir
+    simpanDataKeFile();
+    cout << "\nSemua perubahan (jika ada) telah disimpan ke file.\n";
 }
 
 void hapusPesanan() {
@@ -608,6 +669,3 @@ int main() {
     }
     return 0;
 }
-
-
-// asep
